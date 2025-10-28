@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>生成扩展图标</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .icon { margin: 20px; display: inline-block; }
+        canvas { border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>浏览器扩展图标生成器</h1>
+    <p>点击按钮生成不同尺寸的图标，然后右键保存为PNG文件到icons文件夹</p>
+    
+    <div class="icon">
+        <h3>16x16 图标</h3>
+        <canvas id="icon16" width="16" height="16"></canvas>
+        <br><button onclick="downloadIcon('icon16', 'icon16.png')">下载 16x16</button>
+    </div>
+    
+    <div class="icon">
+        <h3>48x48 图标</h3>
+        <canvas id="icon48" width="48" height="48"></canvas>
+        <br><button onclick="downloadIcon('icon48', 'icon48.png')">下载 48x48</button>
+    </div>
+    
+    <div class="icon">
+        <h3>128x128 图标</h3>
+        <canvas id="icon128" width="128" height="128"></canvas>
+        <br><button onclick="downloadIcon('icon128', 'icon128.png')">下载 128x128</button>
+    </div>
+
+    <script>
+        function drawIcon(canvasId, size) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // 清空画布
+            ctx.clearRect(0, 0, size, size);
+            
+            // 绘制盾牌背景
+            ctx.fillStyle = '#667eea';
+            ctx.beginPath();
+            ctx.moveTo(size/2, size*0.1);
+            ctx.lineTo(size*0.9, size*0.3);
+            ctx.lineTo(size*0.9, size*0.7);
+            ctx.lineTo(size/2, size*0.9);
+            ctx.lineTo(size*0.1, size*0.7);
+            ctx.lineTo(size*0.1, size*0.3);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 绘制盾牌边框
+            ctx.strokeStyle = '#4c63d2';
+            ctx.lineWidth = size * 0.02;
+            ctx.stroke();
+            
+            // 绘制对勾
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = size * 0.08;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(size*0.3, size*0.5);
+            ctx.lineTo(size*0.45, size*0.65);
+            ctx.lineTo(size*0.7, size*0.35);
+            ctx.stroke();
+            
+            // 绘制警告图标（小圆点）
+            ctx.fillStyle = '#ff4444';
+            ctx.beginPath();
+            ctx.arc(size*0.8, size*0.2, size*0.08, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        function downloadIcon(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // 生成所有图标
+        drawIcon('icon16', 16);
+        drawIcon('icon48', 48);
+        drawIcon('icon128', 128);
+    </script>
+</body>
+</html>
+
+

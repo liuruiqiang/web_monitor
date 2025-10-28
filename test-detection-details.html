@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>检测详情测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .danger {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .danger-btn {
+            background: #dc3545;
+        }
+        .danger-btn:hover {
+            background: #c82333;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            color: #1565c0;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 检测详情测试页面</h1>
+    
+    <div class="info-box">
+        <h3>📋 功能说明</h3>
+        <p>此页面用于测试内容安全监控器的检测详情功能。当检测到不当内容时，系统会记录具体的检测理由，包括：</p>
+        <ul>
+            <li>检测类型（URL、标题、内容、图片等）</li>
+            <li>具体检测到的关键词或域名</li>
+            <li>触发检测的具体内容</li>
+            <li>检测时间戳</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>正常内容测试</h2>
+        <p>以下内容应该不会触发警告：</p>
+        <div class="success">
+            <h3>教育网站</h3>
+            <p>这是一个关于成人教育的网站，提供专业的成人学习课程。</p>
+            <p>我们致力于帮助成年人提升技能，包括编程、设计、管理等。</p>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>危险内容测试（会触发警告并记录详情）</h2>
+        <p>点击下面的按钮测试不同类型的检测：</p>
+        
+        <button onclick="testKeywordDetection()" class="danger-btn">测试关键词检测</button>
+        <button onclick="testUrlDetection()" class="danger-btn">测试URL检测</button>
+        <button onclick="testImageDetection()" class="danger-btn">测试图片检测</button>
+        <button onclick="testVideoDetection()" class="danger-btn">测试视频检测</button>
+        
+        <div class="danger">
+            <strong>⚠️ 警告：</strong>点击上述按钮会立即触发页面阻止功能，并记录详细的检测信息！
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>检测详情查看</h2>
+        <p>检测完成后，您可以通过以下方式查看检测详情：</p>
+        <ol>
+            <li>点击浏览器工具栏中的扩展图标</li>
+            <li>点击"历史"按钮查看警告历史</li>
+            <li>在历史记录中查看具体的检测详情</li>
+            <li>打开浏览器开发者工具（F12）查看控制台输出</li>
+        </ol>
+        
+        <button onclick="checkDetectionDetails()">检查检测详情</button>
+        <div id="details-info"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>调试模式</h2>
+        <p>启用调试模式可以在控制台看到详细的检测过程：</p>
+        <button onclick="enableDebugMode()">启用调试模式</button>
+        <button onclick="showCurrentStatus()">显示当前状态</button>
+    </div>
+
+    <script>
+        function testKeywordDetection() {
+            // 添加包含关键词的内容
+            const dangerousDiv = document.createElement('div');
+            dangerousDiv.innerHTML = `
+                <h3>危险内容测试</h3>
+                <p>这里包含一些色情内容关键词用于测试检测详情功能。</p>
+                <p>pornography content for testing detection details</p>
+            `;
+            document.body.appendChild(dangerousDiv);
+        }
+        
+        function testUrlDetection() {
+            // 创建一个包含可疑URL的链接
+            const link = document.createElement('a');
+            link.href = 'https://example-porn-site.com/video';
+            link.textContent = '可疑链接';
+            link.style.display = 'block';
+            link.style.margin = '10px 0';
+            link.style.padding = '10px';
+            link.style.background = '#ffebee';
+            link.style.border = '1px solid #f5c6cb';
+            link.style.borderRadius = '5px';
+            document.body.appendChild(link);
+        }
+        
+        function testImageDetection() {
+            // 创建一个包含可疑alt属性的图片
+            const img = document.createElement('img');
+            img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2ZmNDQ0NCIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuKdpO+4jzwvdGV4dD48L3N2Zz4=';
+            img.alt = '色情图片测试';
+            img.style.display = 'block';
+            img.style.margin = '10px 0';
+            document.body.appendChild(img);
+        }
+        
+        function testVideoDetection() {
+            // 创建一个包含可疑src的视频
+            const video = document.createElement('video');
+            video.src = 'https://example-adult-video.com/video.mp4';
+            video.poster = 'https://example-adult-video.com/poster.jpg';
+            video.controls = true;
+            video.style.width = '300px';
+            video.style.height = '200px';
+            video.style.display = 'block';
+            video.style.margin = '10px 0';
+            document.body.appendChild(video);
+        }
+        
+        function checkDetectionDetails() {
+            const detailsInfo = document.getElementById('details-info');
+            detailsInfo.innerHTML = `
+                <div class="info-box">
+                    <h4>检测详情说明：</h4>
+                    <p>当检测到不当内容时，系统会记录以下信息：</p>
+                    <ul>
+                        <li><strong>检测类型：</strong>URL检测、标题检测、内容检测、图片检测等</li>
+                        <li><strong>检测理由：</strong>具体检测到的关键词或域名</li>
+                        <li><strong>触发内容：</strong>导致检测的具体文本或URL</li>
+                        <li><strong>时间戳：</strong>检测发生的具体时间</li>
+                        <li><strong>页面URL：</strong>发生检测的页面地址</li>
+                    </ul>
+                    <p>这些信息会保存在扩展的本地存储中，可以通过历史记录查看。</p>
+                </div>
+            `;
+        }
+        
+        function enableDebugMode() {
+            if (window.contentMonitor) {
+                window.contentMonitor.debugMode = true;
+                alert('调试模式已启用，请查看控制台输出');
+            } else {
+                alert('扩展未加载或调试模式不可用');
+            }
+        }
+        
+        function showCurrentStatus() {
+            const url = window.location.href;
+            const title = document.title;
+            
+            console.log('当前页面状态:', {
+                url: url,
+                title: title,
+                extensionLoaded: typeof chrome !== 'undefined',
+                contentMonitor: window.contentMonitor ? '已加载' : '未加载'
+            });
+            
+            alert(`当前页面状态已输出到控制台\nURL: ${url}\n标题: ${title}`);
+        }
+        
+        // 页面加载完成后自动检查状态
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('检测详情测试页面已加载');
+                if (window.contentMonitor) {
+                    console.log('内容监控器已就绪');
+                } else {
+                    console.log('内容监控器未加载');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>内容安全监控器 - 测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .safe-content {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .danger-btn {
+            background: #dc3545;
+        }
+        .danger-btn:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛡️ 内容安全监控器测试页面</h1>
+    
+    <div class="warning">
+        <strong>⚠️ 注意：</strong> 此页面包含测试内容，用于验证扩展功能。请确保已正确安装内容安全监控器扩展。
+    </div>
+    
+    <div class="test-section">
+        <h2>测试说明</h2>
+        <p>此页面包含各种测试内容，用于验证内容安全监控器的检测功能。请按以下步骤测试：</p>
+        <ol>
+            <li>确保扩展已安装并启用</li>
+            <li>点击下面的测试按钮</li>
+            <li>观察是否出现警告弹窗</li>
+            <li>测试不同的检测场景</li>
+        </ol>
+    </div>
+    
+    <div class="test-section">
+        <h2>关键词检测测试</h2>
+        <p>点击按钮测试关键词检测功能（注意：这些测试会立即阻止页面）：</p>
+        <button onclick="testKeyword('porn')" class="danger-btn">测试英文关键词</button>
+        <button onclick="testKeyword('色情')" class="danger-btn">测试中文关键词</button>
+        <button onclick="testKeyword('adult')" class="danger-btn">测试成人内容</button>
+        <button onclick="testKeyword('xxx')" class="danger-btn">测试敏感词汇</button>
+        <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; color: #856404;">
+            <strong>⚠️ 警告：</strong>点击上述按钮会立即触发页面阻止功能，页面将被完全锁定！
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>安全内容测试</h2>
+        <p>以下内容应该不会触发警告：</p>
+        <div class="safe-content">
+            <p>这是一个正常的网页内容，包含教育、科技、新闻等安全信息。</p>
+            <p>我们致力于提供健康、积极、有益的网络环境。</p>
+        </div>
+        <button onclick="showSafeContent()">显示更多安全内容</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>动态内容测试</h2>
+        <p>测试动态添加的内容检测：</p>
+        <button onclick="addSuspiciousContent()" class="danger-btn">添加可疑内容</button>
+        <button onclick="addSafeContent()">添加安全内容</button>
+        <div id="dynamic-content"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>视频元素测试</h2>
+        <p>测试视频元素检测：</p>
+        <button onclick="addSuspiciousVideo()" class="danger-btn">添加可疑视频</button>
+        <button onclick="addSafeVideo()">添加安全视频</button>
+        <div id="video-content"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>网络请求测试</h2>
+        <p>测试网络请求监控：</p>
+        <button onclick="testSuspiciousRequest()" class="danger-btn">测试可疑请求</button>
+        <button onclick="testSafeRequest()">测试安全请求</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>扩展状态检查</h2>
+        <p>检查扩展是否正常工作：</p>
+        <button onclick="checkExtensionStatus()">检查扩展状态</button>
+        <div id="extension-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试结果</h2>
+        <p>如果您看到警告弹窗，说明扩展工作正常。如果没有看到警告，请检查：</p>
+        <ul>
+            <li>扩展是否正确安装</li>
+            <li>扩展是否已启用</li>
+            <li>浏览器控制台是否有错误信息</li>
+        </ul>
+    </div>
+
+    <script>
+        function testKeyword(keyword) {
+            const testDiv = document.createElement('div');
+            testDiv.innerHTML = `<p>测试内容包含关键词: ${keyword}</p>`;
+            testDiv.style.background = '#fff3cd';
+            testDiv.style.padding = '10px';
+            testDiv.style.margin = '10px 0';
+            testDiv.style.border = '1px solid #ffeaa7';
+            document.body.appendChild(testDiv);
+        }
+        
+        function showSafeContent() {
+            const safeDiv = document.createElement('div');
+            safeDiv.innerHTML = `
+                <h3>安全内容示例</h3>
+                <p>这是教育内容，包含科学、技术、工程和数学知识。</p>
+                <p>我们学习编程、人工智能、网络安全等现代技术。</p>
+            `;
+            safeDiv.style.background = '#d4edda';
+            safeDiv.style.padding = '15px';
+            safeDiv.style.margin = '10px 0';
+            safeDiv.style.border = '1px solid #c3e6cb';
+            document.body.appendChild(safeDiv);
+        }
+        
+        function addSuspiciousContent() {
+            const content = document.getElementById('dynamic-content');
+            content.innerHTML = '<p>这里包含一些可疑的成人内容关键词</p>';
+        }
+        
+        function addSafeContent() {
+            const content = document.getElementById('dynamic-content');
+            content.innerHTML = '<p>这是完全安全的教育内容</p>';
+        }
+        
+        function addSuspiciousVideo() {
+            const videoContent = document.getElementById('video-content');
+            const video = document.createElement('video');
+            video.src = 'https://example-adult-site.com/video.mp4';
+            video.poster = 'https://example-adult-site.com/poster.jpg';
+            video.controls = true;
+            video.style.width = '300px';
+            video.style.height = '200px';
+            videoContent.innerHTML = '';
+            videoContent.appendChild(video);
+        }
+        
+        function addSafeVideo() {
+            const videoContent = document.getElementById('video-content');
+            const video = document.createElement('video');
+            video.src = 'https://example-education.com/video.mp4';
+            video.poster = 'https://example-education.com/poster.jpg';
+            video.controls = true;
+            video.style.width = '300px';
+            video.style.height = '200px';
+            videoContent.innerHTML = '';
+            videoContent.appendChild(video);
+        }
+        
+        function testSuspiciousRequest() {
+            fetch('https://example-adult-site.com/api/data')
+                .then(response => console.log('Suspicious request sent'))
+                .catch(error => console.log('Request blocked or failed'));
+        }
+        
+        function testSafeRequest() {
+            fetch('https://httpbin.org/json')
+                .then(response => response.json())
+                .then(data => console.log('Safe request successful', data))
+                .catch(error => console.log('Safe request failed', error));
+        }
+        
+        function checkExtensionStatus() {
+            const statusDiv = document.getElementById('extension-status');
+            
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+                statusDiv.innerHTML = `
+                    <div style="color: green; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px;">
+                        ✅ 扩展环境检测正常<br>
+                        Chrome API 可用<br>
+                        扩展应该能够正常工作
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <div style="color: red; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px;">
+                        ❌ 扩展环境检测失败<br>
+                        Chrome API 不可用<br>
+                        请检查扩展是否正确安装
+                    </div>
+                `;
+            }
+        }
+        
+        // 页面加载完成后自动检查扩展状态
+        window.addEventListener('load', () => {
+            setTimeout(checkExtensionStatus, 1000);
+        });
+    </script>
+</body>
+</html>

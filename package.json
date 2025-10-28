@@ -1,0 +1,37 @@
+{
+  "name": "content-security-monitor",
+  "version": "1.0.0",
+  "description": "浏览器内容安全监控扩展插件",
+  "main": "manifest.json",
+  "scripts": {
+    "build": "echo 'No build process needed for browser extension'",
+    "test": "echo 'No tests specified'",
+    "lint": "echo 'No linting configured'"
+  },
+  "keywords": [
+    "browser-extension",
+    "content-filter",
+    "security",
+    "monitoring",
+    "parental-control",
+    "chrome-extension",
+    "firefox-extension"
+  ],
+  "author": "AI Assistant",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/content-security-monitor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/content-security-monitor/issues"
+  },
+  "homepage": "https://github.com/your-username/content-security-monitor#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}
+
+

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>内容安全监控器 - 修复测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .danger-btn {
+            background: #dc3545;
+        }
+        .danger-btn:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛡️ 内容安全监控器 - 修复测试</h1>
+    
+    <div class="success">
+        <h3>✅ 修复说明</h3>
+        <p>已修复以下问题：</p>
+        <ul>
+            <li>移除了过于宽泛的关键词（如 'adult', 'sex'）</li>
+            <li>添加了白名单机制，保护正常网站</li>
+            <li>改进了关键词匹配算法，使用单词边界匹配</li>
+            <li>优化了域名检测，避免误报</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>正常内容测试</h2>
+        <p>以下内容应该不会触发警告：</p>
+        <div class="success">
+            <h3>教育内容</h3>
+            <p>这是一个关于成人教育的网站，提供专业的成人学习课程。</p>
+            <p>我们致力于帮助成年人提升技能，包括编程、设计、管理等。</p>
+        </div>
+        
+        <div class="success">
+            <h3>技术内容</h3>
+            <p>这个网站包含大量的技术文档和代码示例。</p>
+            <p>开发者可以在这里找到各种编程语言的教程。</p>
+        </div>
+        
+        <div class="success">
+            <h3>新闻内容</h3>
+            <p>今日新闻：某公司发布了新的产品。</p>
+            <p>这个产品将帮助用户更好地管理他们的数据。</p>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>白名单测试</h2>
+        <p>以下网站应该被白名单保护：</p>
+        <ul>
+            <li>Google.com - 搜索引擎</li>
+            <li>GitHub.com - 代码托管平台</li>
+            <li>Wikipedia.org - 百科全书</li>
+            <li>YouTube.com - 视频平台</li>
+            <li>AdultSwim.com - 动画频道</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>危险内容测试（会触发警告）</h2>
+        <p>点击下面的按钮测试真正的危险内容检测：</p>
+        <button onclick="testDangerousContent()" class="danger-btn">测试危险内容</button>
+        <div class="warning">
+            <strong>⚠️ 警告：</strong>点击上述按钮会触发页面阻止功能！
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>调试信息</h2>
+        <p>打开浏览器开发者工具（F12），查看控制台输出，了解检测过程。</p>
+        <button onclick="enableDebugMode()">启用调试模式</button>
+        <button onclick="checkCurrentStatus()">检查当前状态</button>
+        <div id="debug-info"></div>
+    </div>
+
+    <script>
+        function testDangerousContent() {
+            // 添加一些真正危险的内容来测试
+            const dangerousDiv = document.createElement('div');
+            dangerousDiv.innerHTML = `
+                <h3>危险内容测试</h3>
+                <p>这里包含一些色情内容关键词用于测试。</p>
+                <p>pornography content for testing</p>
+            `;
+            document.body.appendChild(dangerousDiv);
+        }
+        
+        function enableDebugMode() {
+            // 尝试启用调试模式
+            if (window.contentMonitor) {
+                window.contentMonitor.debugMode = true;
+                alert('调试模式已启用，请查看控制台输出');
+            } else {
+                alert('扩展未加载或调试模式不可用');
+            }
+        }
+        
+        function checkCurrentStatus() {
+            const debugInfo = document.getElementById('debug-info');
+            const url = window.location.href;
+            const title = document.title;
+            
+            debugInfo.innerHTML = `
+                <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                    <h4>当前页面信息：</h4>
+                    <p><strong>URL:</strong> ${url}</p>
+                    <p><strong>标题:</strong> ${title}</p>
+                    <p><strong>扩展状态:</strong> ${typeof chrome !== 'undefined' ? '已加载' : '未加载'}</p>
+                </div>
+            `;
+        }
+        
+        // 页面加载完成后自动检查状态
+        window.addEventListener('load', () => {
+            setTimeout(checkCurrentStatus, 1000);
+        });
+    </script>
+</body>
+</html>
+
