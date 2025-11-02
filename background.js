@@ -3,6 +3,12 @@ class BackgroundService {
   constructor() {
     this.warningHistory = [];
     this.isEnabled = true;
+    this.sleepSettings = {
+      sleepReminderEnabled: false,
+      sleepCutoff: '23:30',
+      sleepNagIntervalMinutes: 30
+    };
+    this.sleepNotificationId = null;
     
     this.init();
   }
@@ -32,6 +38,13 @@ class BackgroundService {
     
     // 初始化存储
     this.initializeStorage();
+
+    // 监听闹钟
+    chrome.alarms.onAlarm.addListener((alarm) => {
+      if (alarm && alarm.name === 'sleep-check') {
+        this.handleSleepAlarm();
+      }
+    });
   }
   
   handleMessage(request, sender, sendResponse) {
@@ -175,7 +188,7 @@ class BackgroundService {
   
   async initializeStorage() {
     try {
-      const result = await chrome.storage.local.get(['warningHistory', 'settings']);
+      const result = await chrome.storage.local.get(['warningHistory', 'settings', 'sleepLastNotifyAt', 'sleepSnoozeUntil']);
       
       if (result.warningHistory) {
         this.warningHistory = result.warningHistory;
@@ -183,7 +196,13 @@ class BackgroundService {
       
       if (result.settings) {
         this.isEnabled = result.settings.enabled !== false;
+        this.sleepSettings.sleepReminderEnabled = !!result.settings.sleepReminderEnabled;
+        this.sleepSettings.sleepCutoff = result.settings.sleepCutoff || this.sleepSettings.sleepCutoff;
+        this.sleepSettings.sleepNagIntervalMinutes = result.settings.sleepNagIntervalMinutes || this.sleepSettings.sleepNagIntervalMinutes;
       }
+
+      // 启动或停止睡觉提醒闹钟
+      this.configureSleepAlarm();
     } catch (error) {
       console.error('Failed to initialize storage:', error);
     }
@@ -195,7 +214,10 @@ class BackgroundService {
         enabled: true,
         strictMode: false,
         customKeywords: [],
-        blockedDomains: []
+        blockedDomains: [],
+        sleepReminderEnabled: false,
+        sleepCutoff: '23:30',
+        sleepNagIntervalMinutes: 30
       };
       
       sendResponse({
@@ -207,7 +229,84 @@ class BackgroundService {
   updateSettings(settings, sendResponse) {
     chrome.storage.local.set({ settings }, () => {
       this.isEnabled = settings.enabled !== false;
+      this.sleepSettings.sleepReminderEnabled = !!settings.sleepReminderEnabled;
+      this.sleepSettings.sleepCutoff = settings.sleepCutoff || this.sleepSettings.sleepCutoff;
+      this.sleepSettings.sleepNagIntervalMinutes = settings.sleepNagIntervalMinutes || this.sleepSettings.sleepNagIntervalMinutes;
+      this.configureSleepAlarm();
       sendResponse({ success: true });
+    });
+  }
+
+  configureSleepAlarm() {
+    // 清理旧闹钟
+    chrome.alarms.clear('sleep-check');
+    if (this.sleepSettings.sleepReminderEnabled) {
+      // 每分钟检查一次
+      chrome.alarms.create('sleep-check', { periodInMinutes: 1 });
+    }
+  }
+
+  async handleSleepAlarm() {
+    try {
+      // 若未启用或监控未启用，直接返回
+      if (!this.sleepSettings.sleepReminderEnabled || this.isEnabled === false) return;
+
+      // 检查是否处于snooze期
+      const { sleepLastNotifyAt, sleepSnoozeUntil } = await chrome.storage.local.get(['sleepLastNotifyAt', 'sleepSnoozeUntil']);
+      const now = new Date();
+      if (sleepSnoozeUntil && new Date(sleepSnoozeUntil) > now) {
+        return;
+      }
+
+      // 仅在有活动标签且为http(s)时提醒
+      const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      const activeTab = tabs && tabs[0];
+      if (!activeTab || !activeTab.url || !/^https?:/i.test(activeTab.url)) return;
+
+      // 是否超过设定时间
+      if (!this.isPastCutoff(now, this.sleepSettings.sleepCutoff)) return;
+
+      // 节流：按照提醒间隔控制频率
+      if (sleepLastNotifyAt) {
+        const last = new Date(sleepLastNotifyAt);
+        const diffMinutes = (now - last) / 60000;
+        if (diffMinutes < (this.sleepSettings.sleepNagIntervalMinutes || 30)) {
+          return;
+        }
+      }
+
+      await this.showSleepNotification();
+      await chrome.storage.local.set({ sleepLastNotifyAt: now.toISOString() });
+    } catch (e) {
+      console.error('Sleep alarm error:', e);
+    }
+  }
+
+  isPastCutoff(now, cutoffHHMM) {
+    const [hh, mm] = (cutoffHHMM || '23:30').split(':').map(n => parseInt(n, 10));
+    if (isNaN(hh) || isNaN(mm)) return false;
+    const cutoff = new Date(now);
+    cutoff.setHours(hh, mm, 0, 0);
+    // 如果设定是晚上时间，过了当天该时间就提示；若用户设定清晨时间也允许跨日处理
+    if (now >= cutoff) return true;
+    return false;
+  }
+
+  showSleepNotification() {
+    return new Promise((resolve) => {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icons/icon48.png',
+        title: '作息提醒',
+        message: '已经超过设定的睡觉时间了，建议尽快休息。',
+        buttons: [
+          { title: '知道了' },
+          { title: '稍后提醒' }
+        ]
+      }, (notificationId) => {
+        this.sleepNotificationId = notificationId;
+        resolve();
+      });
     });
   }
   
@@ -224,13 +323,16 @@ class BackgroundService {
 }
 
 // 启动后台服务
-new BackgroundService();
+globalThis.backgroundService = new BackgroundService();
 
 // 监听通知点击
 chrome.notifications.onClicked.addListener((notificationId) => {
   if (notificationId === this.currentNotificationId) {
     // 打开popup页面
     chrome.action.openPopup();
+  } else if (notificationId === (globalThis.backgroundService?.sleepNotificationId || null)) {
+    // 点击睡觉提醒时，默认视为确认
+    chrome.notifications.clear(notificationId);
   }
 });
 
@@ -243,6 +345,18 @@ chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) =
     } else if (buttonIndex === 1) {
       // 忽略
       chrome.notifications.clear(notificationId);
+    }
+  } else if (notificationId === (globalThis.backgroundService?.sleepNotificationId || null)) {
+    if (buttonIndex === 0) {
+      // 知道了
+      chrome.notifications.clear(notificationId);
+    } else if (buttonIndex === 1) {
+      // 稍后提醒 -> 设置snooze直到间隔后
+      const minutes = (globalThis.backgroundService?.sleepSettings?.sleepNagIntervalMinutes) || 30;
+      const snoozeUntil = new Date(Date.now() + minutes * 60000).toISOString();
+      chrome.storage.local.set({ sleepSnoozeUntil: snoozeUntil }, () => {
+        chrome.notifications.clear(notificationId);
+      });
     }
   }
 });

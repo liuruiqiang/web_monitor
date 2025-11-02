@@ -314,6 +314,33 @@
     </div>
     
     <div class="settings-section">
+      <h2 class="section-title">作息提醒</h2>
+      <div class="setting-item">
+        <label class="setting-label">启用睡觉时间提醒</label>
+        <p class="setting-description">到达您设置的晚上时间后，将提醒您尽快休息</p>
+        <div class="toggle-container">
+          <div id="sleepToggle" class="toggle"></div>
+          <span id="sleepStatus">已禁用</span>
+        </div>
+      </div>
+      <div class="setting-item">
+        <label class="setting-label">睡觉时间</label>
+        <p class="setting-description">超过该时间将触发提醒（24小时制）</p>
+        <div class="input-group">
+          <label for="sleepCutoff">选择时间</label>
+          <input id="sleepCutoff" type="time" value="23:30" />
+        </div>
+        <div class="input-group">
+          <label for="sleepInterval">提醒间隔（分钟）</label>
+          <input id="sleepInterval" type="number" min="5" max="180" step="5" placeholder="30" />
+        </div>
+        <div class="help-text">
+          💡 提示：启用后，插件每分钟检查一次时间，超过设定时间将通过通知提醒。
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
       <h2 class="section-title">屏蔽域名</h2>
       
       <div class="setting-item">

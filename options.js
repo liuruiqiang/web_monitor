@@ -5,7 +5,10 @@ class OptionsController {
       enabled: true,
       strictMode: false,
       customKeywords: [],
-      blockedDomains: []
+      blockedDomains: [],
+      sleepReminderEnabled: false,
+      sleepCutoff: '23:30',
+      sleepNagIntervalMinutes: 30
     };
     
     this.warningHistory = [];
@@ -52,6 +55,11 @@ class OptionsController {
     document.getElementById('strictToggle').addEventListener('click', () => {
       this.toggleSetting('strictMode');
     });
+
+    // 睡觉提醒开关
+    document.getElementById('sleepToggle').addEventListener('click', () => {
+      this.toggleSetting('sleepReminderEnabled');
+    });
     
     // 自定义关键词输入
     document.getElementById('customKeywords').addEventListener('input', () => {
@@ -65,6 +73,8 @@ class OptionsController {
     
     // 保存按钮
     document.getElementById('saveBtn').addEventListener('click', () => {
+      // 保存前同步作息时间字段
+      this.syncSleepFieldsFromUI();
       this.saveSettings();
     });
     
@@ -85,15 +95,21 @@ class OptionsController {
   }
   
   updateToggleUI(settingName) {
-    const toggleElement = document.getElementById(settingName === 'enabled' ? 'enableToggle' : 'strictToggle');
-    const statusElement = document.getElementById(settingName === 'enabled' ? 'enableStatus' : 'strictStatus');
+    const map = {
+      enabled: { toggleId: 'enableToggle', statusId: 'enableStatus' },
+      strictMode: { toggleId: 'strictToggle', statusId: 'strictStatus' },
+      sleepReminderEnabled: { toggleId: 'sleepToggle', statusId: 'sleepStatus' }
+    };
+    const { toggleId, statusId } = map[settingName];
+    const toggleElement = document.getElementById(toggleId);
+    const statusElement = document.getElementById(statusId);
     
     if (this.settings[settingName]) {
       toggleElement.classList.add('active');
-      statusElement.textContent = settingName === 'enabled' ? '已启用' : '已启用';
+      statusElement.textContent = '已启用';
     } else {
       toggleElement.classList.remove('active');
-      statusElement.textContent = settingName === 'enabled' ? '已禁用' : '已禁用';
+      statusElement.textContent = '已禁用';
     }
   }
   
@@ -148,6 +164,7 @@ class OptionsController {
     // 更新开关状态
     this.updateToggleUI('enabled');
     this.updateToggleUI('strictMode');
+    this.updateToggleUI('sleepReminderEnabled');
     
     // 更新自定义关键词
     this.updateCustomKeywordsTextarea();
@@ -155,6 +172,10 @@ class OptionsController {
     
     // 更新屏蔽域名
     document.getElementById('blockedDomains').value = this.settings.blockedDomains.join('\n');
+
+    // 更新作息提醒字段
+    document.getElementById('sleepCutoff').value = this.settings.sleepCutoff || '23:30';
+    document.getElementById('sleepInterval').value = this.settings.sleepNagIntervalMinutes || 30;
     
     // 更新统计信息
     this.updateStats();
@@ -192,6 +213,18 @@ class OptionsController {
     } catch (error) {
       alert('保存设置失败，请重试');
       console.error('Save settings error:', error);
+    }
+  }
+
+  syncSleepFieldsFromUI() {
+    const cutoffInput = document.getElementById('sleepCutoff');
+    const intervalInput = document.getElementById('sleepInterval');
+    if (cutoffInput && cutoffInput.value) {
+      this.settings.sleepCutoff = cutoffInput.value;
+    }
+    const minutes = parseInt(intervalInput.value, 10);
+    if (!isNaN(minutes) && minutes >= 5 && minutes <= 180) {
+      this.settings.sleepNagIntervalMinutes = minutes;
     }
   }
   
