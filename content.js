@@ -3,7 +3,7 @@ class ContentMonitor {
   constructor() {
     this.suspiciousKeywords = [
       // 中文关键词
-      '色情', '黄色', '淫秽', '裸体', '性爱', '情色', 'AV', '成人视频',
+      '色情', '黄色', '淫秽', '裸体', '性爱', '情色', '成人视频',
       '成人电影', '色情网站', '成人网站', '黄色网站', '成人内容', '色情内容',
       // 英文关键词 - 更精确的匹配
       'porn', 'pornography', 'nude', 'naked', 'erotic',
