@@ -30,8 +30,7 @@
   "engines": {
     "node": ">=14.0.0"
   },
-  "devDependencies": {},
-  "dependencies": {}
+  "dependencies": {
+    "@react-native-community/cli": "^20.0.2"
+  }
 }
-
-
