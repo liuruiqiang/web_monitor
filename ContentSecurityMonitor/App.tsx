@@ -16,6 +16,8 @@ import {
 } from 'react-native';
 import {WebView} from 'react-native-webview';
 import WarningModal from './src/WarningModal';
+import HistoryModal from './src/HistoryModal';
+import SettingsModal from './src/SettingsModal';
 import {ContentDetector} from './src/ContentDetector';
 
 const App = () => {
@@ -28,6 +30,8 @@ const App = () => {
   const [navigationHistory, setNavigationHistory] = useState<string[]>([]);
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const webViewRef = useRef<WebView>(null);
 
   const handleNavigation = () => {
@@ -141,6 +145,33 @@ const App = () => {
     setCanGoForward(navState.canGoForward);
     setCurrentUrl(navState.url);
     setUrl(navState.url);
+    
+    // Add to history if it's a new URL
+    if (navState.url && !navigationHistory.includes(navState.url)) {
+      setNavigationHistory(prev => [...prev, navState.url]);
+    }
+  };
+
+  const handleSelectHistoryUrl = (selectedUrl: string) => {
+    setUrl(selectedUrl);
+    setCurrentUrl(selectedUrl);
+    setLoading(true);
+  };
+
+  const handleClearHistory = () => {
+    setNavigationHistory([]);
+    Alert.alert('Success', 'Browsing history has been cleared');
+  };
+
+  const handleResetSettings = () => {
+    Alert.alert(
+      'Confirm Reset',
+      'Are you sure you want to reset all settings to default?',
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {text: 'Reset', onPress: () => Alert.alert('Success', 'Settings have been reset to default')},
+      ]
+    );
   };
 
   return (
@@ -187,6 +218,20 @@ const App = () => {
         >
           <Text style={styles.navButtonText}>↻</Text>
         </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.navButton} 
+          onPress={() => setShowHistory(true)}
+        >
+          <Text style={styles.navButtonText}>History</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.navButton} 
+          onPress={() => setShowSettings(true)}
+        >
+          <Text style={styles.navButtonText}>Settings</Text>
+        </TouchableOpacity>
       </View>
 
       {loading && (
@@ -218,6 +263,20 @@ const App = () => {
         onCancel={handleWarningCancel}
         confirmText="Proceed Anyway"
         cancelText="Go Back"
+      />
+      
+      <HistoryModal
+        visible={showHistory}
+        history={navigationHistory}
+        onSelectUrl={handleSelectHistoryUrl}
+        onClose={() => setShowHistory(false)}
+      />
+      
+      <SettingsModal
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+        onClearHistory={handleClearHistory}
+        onResetSettings={handleResetSettings}
       />
     </SafeAreaView>
   );
