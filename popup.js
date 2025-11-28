@@ -9,6 +9,10 @@ class PopupController {
     };
     
     this.warningHistory = [];
+    this.statistics = {
+      daily: {},
+      weekly: {}
+    };
     
     this.init();
   }
@@ -17,6 +21,7 @@ class PopupController {
     await this.loadSettings();
     await this.loadWarningHistory();
     await this.loadDetectionDetails();
+    await this.loadStatistics();
     this.setupEventListeners();
     this.updateUI();
   }
@@ -47,6 +52,17 @@ class PopupController {
     return new Promise((resolve) => {
       chrome.storage.local.get(['detectionDetails'], (result) => {
         this.detectionDetails = result.detectionDetails || [];
+        resolve();
+      });
+    });
+  }
+  
+  async loadStatistics() {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type: 'GET_STATISTICS' }, (response) => {
+        if (response) {
+          this.statistics = response;
+        }
         resolve();
       });
     });
@@ -137,6 +153,12 @@ class PopupController {
     const todayWarnings = this.warningHistory.filter(warning => 
       new Date(warning.timestamp).toDateString() === today
     ).length;
+    
+    // 更新今日访问次数
+    let todayAccessCount = 0;
+    if (this.statistics.daily.accessCount) {
+      todayAccessCount = Object.values(this.statistics.daily.accessCount).reduce((sum, count) => sum + count, 0);
+    }
     
     document.getElementById('totalWarnings').textContent = totalWarnings;
     document.getElementById('todayWarnings').textContent = todayWarnings;

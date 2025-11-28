@@ -341,6 +341,30 @@
     </div>
 
     <div class="settings-section">
+      <h2 class="section-title">频率控制设置</h2>
+      
+      <div class="setting-item">
+        <label class="setting-label">警告阈值</label>
+        <p class="setting-description">当日访问不当内容网站达到此次数时显示警告</p>
+        <div class="input-group">
+          <input id="warningThreshold" type="number" min="1" max="50" step="1" placeholder="5" />
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <label class="setting-label">阻止阈值</label>
+        <p class="setting-description">当日访问不当内容网站达到此次数时阻止访问</p>
+        <div class="input-group">
+          <input id="blockingThreshold" type="number" min="1" max="100" step="1" placeholder="10" />
+        </div>
+      </div>
+      
+      <div class="help-text">
+        💡 提示：设置为0可禁用频率控制功能
+      </div>
+    </div>
+
+    <div class="settings-section">
       <h2 class="section-title">屏蔽域名</h2>
       
       <div class="setting-item">
@@ -368,12 +392,25 @@
           <div class="stat-label">今日警告</div>
         </div>
         <div class="stat-card">
+          <div id="todayAccessCount" class="stat-number">0</div>
+          <div class="stat-label">今日访问</div>
+        </div>
+        <div class="stat-card">
           <div id="blockedSites" class="stat-number">0</div>
           <div class="stat-label">屏蔽网站</div>
         </div>
         <div class="stat-card">
           <div id="customKeywordsCount" class="stat-number">0</div>
           <div class="stat-label">自定义关键词</div>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <h3>本周访问统计</h3>
+        <div id="weeklyStats" style="margin-top: 15px;">
+          <div style="text-align: center; color: #999; padding: 20px;">
+            暂无统计数据
+          </div>
         </div>
       </div>
     </div>

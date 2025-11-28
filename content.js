@@ -36,9 +36,9 @@ class ContentMonitor {
     this.init();
   }
   
-  init() {
+  async init() {
     // 检查当前页面
-    this.checkCurrentPage();
+    await this.checkCurrentPage();
     
     // 监听页面变化
     this.observePageChanges();
@@ -50,7 +50,7 @@ class ContentMonitor {
     this.monitorNetworkRequests();
   }
   
-  checkCurrentPage() {
+  async checkCurrentPage() {
     const url = window.location.href.toLowerCase();
     const title = document.title.toLowerCase();
     const bodyText = document.body ? document.body.innerText.toLowerCase() : '';
@@ -69,6 +69,14 @@ class ContentMonitor {
         console.log('✅ 页面在白名单中，跳过检测');
       }
       return; // 白名单网站直接跳过检测
+    }
+    
+    // 检查频率阻止
+    const shouldBlock = await this.checkDomainBlocking(url);
+    if (shouldBlock) {
+      this.showWarning(`🚫 根据访问频率限制，此网站已被阻止\n原因: 今日访问次数已达到设定上限`);
+      this.logDetection('频率阻止', '访问次数超限', window.location.href);
+      return;
     }
     
     // 立即检查URL - 最高优先级
@@ -149,6 +157,19 @@ class ContentMonitor {
       }
     }
     return { found: false, reason: null };
+  }
+  
+  // Check if domain access should be blocked based on frequency
+  async checkDomainBlocking(url) {
+    return new Promise((resolve) => {
+      // Send message to background script to check if domain should be blocked
+      chrome.runtime.sendMessage({
+        type: 'CHECK_DOMAIN_BLOCKING',
+        url: url
+      }, (response) => {
+        resolve(response?.shouldBlock || false);
+      });
+    });
   }
   
   isWhitelisted(url) {
@@ -705,12 +726,18 @@ class ContentMonitor {
 }
 
 // 等待页面加载完成后启动监控
+async function initializeContentMonitor() {
+  const monitor = new ContentMonitor();
+  // 确保初始化完成
+  await monitor.init();
+}
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    new ContentMonitor();
+    initializeContentMonitor();
   });
 } else {
-  new ContentMonitor();
+  initializeContentMonitor();
 }
 
 // 监听来自popup的消息

@@ -8,10 +8,18 @@ class OptionsController {
       blockedDomains: [],
       sleepReminderEnabled: false,
       sleepCutoff: '23:30',
-      sleepNagIntervalMinutes: 30
+      sleepNagIntervalMinutes: 30,
+      frequencySettings: {
+        warningThreshold: 5,
+        blockingThreshold: 10
+      }
     };
     
     this.warningHistory = [];
+    this.statistics = {
+      daily: {},
+      weekly: {}
+    };
     
     this.init();
   }
@@ -19,6 +27,7 @@ class OptionsController {
   async init() {
     await this.loadSettings();
     await this.loadWarningHistory();
+    await this.loadStatistics();
     this.setupEventListeners();
     this.updateUI();
   }
@@ -73,8 +82,8 @@ class OptionsController {
     
     // 保存按钮
     document.getElementById('saveBtn').addEventListener('click', () => {
-      // 保存前同步作息时间字段
-      this.syncSleepFieldsFromUI();
+      // 保存前同步所有字段
+      this.syncFieldsFromUI();
       this.saveSettings();
     });
     
@@ -177,8 +186,15 @@ class OptionsController {
     document.getElementById('sleepCutoff').value = this.settings.sleepCutoff || '23:30';
     document.getElementById('sleepInterval').value = this.settings.sleepNagIntervalMinutes || 30;
     
+    // 更新频率控制字段
+    document.getElementById('warningThreshold').value = this.settings.frequencySettings?.warningThreshold || 5;
+    document.getElementById('blockingThreshold').value = this.settings.frequencySettings?.blockingThreshold || 10;
+    
     // 更新统计信息
     this.updateStats();
+    
+    // 更新统计图表
+    this.updateWeeklyStats();
   }
   
   updateStats() {
@@ -188,10 +204,77 @@ class OptionsController {
       new Date(warning.timestamp).toDateString() === today
     ).length;
     
+    // 更新今日访问次数
+    let todayAccessCount = 0;
+    if (this.statistics.daily.accessCount) {
+      todayAccessCount = Object.values(this.statistics.daily.accessCount).reduce((sum, count) => sum + count, 0);
+    }
+    
     document.getElementById('totalWarnings').textContent = totalWarnings;
     document.getElementById('todayWarnings').textContent = todayWarnings;
+    document.getElementById('todayAccessCount').textContent = todayAccessCount;
     document.getElementById('blockedSites').textContent = this.settings.blockedDomains.length;
     document.getElementById('customKeywordsCount').textContent = this.settings.customKeywords.length;
+  }
+  
+  async loadStatistics() {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type: 'GET_STATISTICS' }, (response) => {
+        if (response) {
+          this.statistics = response;
+        }
+        resolve();
+      });
+    });
+  }
+  
+  updateWeeklyStats() {
+    const container = document.getElementById('weeklyStats');
+    
+    if (!this.statistics.weekly) {
+      container.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无统计数据</div>';
+      return;
+    }
+    
+    // Convert weekly stats to array and sort by date
+    const weeklyData = Object.entries(this.statistics.weekly)
+      .map(([date, stats]) => ({ date, stats }))
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    if (weeklyData.length === 0) {
+      container.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无统计数据</div>';
+      return;
+    }
+    
+    // Create simple bar chart representation
+    const maxAccess = Math.max(...weeklyData.map(item => item.stats.totalAccess), 1);
+    
+    container.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        ${weeklyData.map(item => {
+          const dateObj = new Date(item.date);
+          const dayName = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dateObj.getDay()];
+          const isToday = dateObj.toDateString() === new Date().toDateString();
+          const percentage = maxAccess > 0 ? (item.stats.totalAccess / maxAccess) * 100 : 0;
+          
+          return `
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 80px; font-size: 12px; color: #666;">
+                ${isToday ? '今天' : dayName}
+              </div>
+              <div style="flex: 1; display: flex; align-items: center; gap: 5px;">
+                <div style="width: 30px; text-align: right; font-size: 12px; color: #666;">
+                  ${item.stats.totalAccess}
+                </div>
+                <div style="flex: 1; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden;">
+                  <div style="height: 100%; width: ${percentage}%; background: #667eea; border-radius: 10px;"></div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
   }
   
   async saveSettings() {
@@ -209,6 +292,10 @@ class OptionsController {
         });
       });
       
+      // 重新加载统计数据
+      await this.loadStatistics();
+      this.updateUI();
+      
       this.showSuccessMessage();
     } catch (error) {
       alert('保存设置失败，请重试');
@@ -216,7 +303,8 @@ class OptionsController {
     }
   }
 
-  syncSleepFieldsFromUI() {
+  syncFieldsFromUI() {
+    // 同步作息提醒字段
     const cutoffInput = document.getElementById('sleepCutoff');
     const intervalInput = document.getElementById('sleepInterval');
     if (cutoffInput && cutoffInput.value) {
@@ -225,6 +313,19 @@ class OptionsController {
     const minutes = parseInt(intervalInput.value, 10);
     if (!isNaN(minutes) && minutes >= 5 && minutes <= 180) {
       this.settings.sleepNagIntervalMinutes = minutes;
+    }
+    
+    // 同步频率控制字段
+    const warningThresholdInput = document.getElementById('warningThreshold');
+    const blockingThresholdInput = document.getElementById('blockingThreshold');
+    const warningThreshold = parseInt(warningThresholdInput.value, 10);
+    const blockingThreshold = parseInt(blockingThresholdInput.value, 10);
+    
+    if (!isNaN(warningThreshold) && warningThreshold >= 0) {
+      this.settings.frequencySettings.warningThreshold = warningThreshold;
+    }
+    if (!isNaN(blockingThreshold) && blockingThreshold >= 0) {
+      this.settings.frequencySettings.blockingThreshold = blockingThreshold;
     }
   }
   

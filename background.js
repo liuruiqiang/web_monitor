@@ -2,6 +2,8 @@
 class BackgroundService {
   constructor() {
     this.warningHistory = [];
+    this.accessFrequency = {}; // Track access frequency by domain
+    this.dailyAccessCount = {}; // Track daily access counts
     this.isEnabled = true;
     this.sleepSettings = {
       sleepReminderEnabled: false,
@@ -9,6 +11,10 @@ class BackgroundService {
       sleepNagIntervalMinutes: 30
     };
     this.sleepNotificationId = null;
+    this.frequencySettings = {
+      warningThreshold: 5, // Warn after 5 accesses per day
+      blockingThreshold: 10 // Block after 10 accesses per day
+    };
     
     this.init();
   }
@@ -64,6 +70,12 @@ class BackgroundService {
       case 'GET_HISTORY':
         this.getWarningHistory(sendResponse);
         break;
+      case 'GET_STATISTICS':
+        this.getDailyStatistics(sendResponse);
+        break;
+      case 'CHECK_DOMAIN_BLOCKING':
+        this.checkDomainBlocking(request.url, sendResponse);
+        break;
       case 'CLEAR_HISTORY':
         this.clearWarningHistory(sendResponse);
         break;
@@ -83,9 +95,26 @@ class BackgroundService {
     
     this.warningHistory.push(warning);
     
+    // Track access frequency
+    this.trackAccessFrequency(request.url);
+    
+    // Check if we need to show a frequency-based warning
+    const domain = this.extractDomain(request.url);
+    const dailyCount = this.getDailyAccessCount(domain);
+    
+    if (dailyCount >= this.frequencySettings.warningThreshold && dailyCount < this.frequencySettings.blockingThreshold) {
+      // Show frequency warning
+      this.showFrequencyWarning(domain, dailyCount);
+    } else if (dailyCount >= this.frequencySettings.blockingThreshold) {
+      // Show blocking warning
+      this.showBlockingWarning(domain, dailyCount);
+    }
+    
     // 保存到存储
     chrome.storage.local.set({
-      warningHistory: this.warningHistory
+      warningHistory: this.warningHistory,
+      accessFrequency: this.accessFrequency,
+      dailyAccessCount: this.dailyAccessCount
     });
     
     // 显示通知
@@ -93,6 +122,79 @@ class BackgroundService {
     
     // 记录到控制台
     console.log('Content Security Warning:', warning);
+  }
+  
+  trackAccessFrequency(url) {
+    const domain = this.extractDomain(url);
+    const today = new Date().toDateString();
+    
+    // Update access frequency
+    if (!this.accessFrequency[domain]) {
+      this.accessFrequency[domain] = {};
+    }
+    
+    if (!this.accessFrequency[domain][today]) {
+      this.accessFrequency[domain][today] = 0;
+    }
+    
+    this.accessFrequency[domain][today]++;
+    
+    // Update daily access count
+    if (!this.dailyAccessCount[today]) {
+      this.dailyAccessCount[today] = {};
+    }
+    
+    if (!this.dailyAccessCount[today][domain]) {
+      this.dailyAccessCount[today][domain] = 0;
+    }
+    
+    this.dailyAccessCount[today][domain]++;
+  }
+  
+  getDailyAccessCount(domain) {
+    const today = new Date().toDateString();
+    return this.dailyAccessCount[today]?.[domain] || 0;
+  }
+  
+  extractDomain(url) {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname;
+    } catch (e) {
+      return url;
+    }
+  }
+  
+  showFrequencyWarning(domain, count) {
+    const warningMessage = `您今天已经访问了 ${domain} ${count} 次不当内容网站。请注意控制浏览时间，避免过度沉迷。`;
+    
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon48.png',
+      title: '浏览频率警告',
+      message: warningMessage,
+      priority: 2
+    });
+  }
+  
+  showBlockingWarning(domain, count) {
+    const warningMessage = `您今天已经访问了 ${domain} ${count} 次不当内容网站，已达到最大限制。网站访问已被阻止。`;
+    
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon48.png',
+      title: '访问限制警告',
+      message: warningMessage,
+      priority: 2
+    });
+  }
+  
+  checkDomainBlocking(url, sendResponse) {
+    const domain = this.extractDomain(url);
+    const dailyCount = this.getDailyAccessCount(domain);
+    const shouldBlock = dailyCount >= this.frequencySettings.blockingThreshold && this.frequencySettings.blockingThreshold > 0;
+    
+    sendResponse({ shouldBlock: shouldBlock });
   }
   
   handleDetectionDetail(request, sender) {
@@ -188,10 +290,18 @@ class BackgroundService {
   
   async initializeStorage() {
     try {
-      const result = await chrome.storage.local.get(['warningHistory', 'settings', 'sleepLastNotifyAt', 'sleepSnoozeUntil']);
+      const result = await chrome.storage.local.get(['warningHistory', 'accessFrequency', 'dailyAccessCount', 'settings', 'sleepLastNotifyAt', 'sleepSnoozeUntil']);
       
       if (result.warningHistory) {
         this.warningHistory = result.warningHistory;
+      }
+      
+      if (result.accessFrequency) {
+        this.accessFrequency = result.accessFrequency;
+      }
+      
+      if (result.dailyAccessCount) {
+        this.dailyAccessCount = result.dailyAccessCount;
       }
       
       if (result.settings) {
@@ -199,10 +309,16 @@ class BackgroundService {
         this.sleepSettings.sleepReminderEnabled = !!result.settings.sleepReminderEnabled;
         this.sleepSettings.sleepCutoff = result.settings.sleepCutoff || this.sleepSettings.sleepCutoff;
         this.sleepSettings.sleepNagIntervalMinutes = result.settings.sleepNagIntervalMinutes || this.sleepSettings.sleepNagIntervalMinutes;
+        if (result.settings.frequencySettings) {
+          this.frequencySettings = { ...this.frequencySettings, ...result.settings.frequencySettings };
+        }
       }
 
       // 启动或停止睡觉提醒闹钟
       this.configureSleepAlarm();
+      
+      // 每天重置访问计数器
+      this.setupDailyReset();
     } catch (error) {
       console.error('Failed to initialize storage:', error);
     }
@@ -232,6 +348,9 @@ class BackgroundService {
       this.sleepSettings.sleepReminderEnabled = !!settings.sleepReminderEnabled;
       this.sleepSettings.sleepCutoff = settings.sleepCutoff || this.sleepSettings.sleepCutoff;
       this.sleepSettings.sleepNagIntervalMinutes = settings.sleepNagIntervalMinutes || this.sleepSettings.sleepNagIntervalMinutes;
+      if (settings.frequencySettings) {
+        this.frequencySettings = { ...this.frequencySettings, ...settings.frequencySettings };
+      }
       this.configureSleepAlarm();
       sendResponse({ success: true });
     });
@@ -244,6 +363,35 @@ class BackgroundService {
       // 每分钟检查一次
       chrome.alarms.create('sleep-check', { periodInMinutes: 1 });
     }
+  }
+  
+  setupDailyReset() {
+    // 每天凌晨重置访问计数器
+    chrome.alarms.clear('daily-reset');
+    chrome.alarms.create('daily-reset', { 
+      when: this.getNextMidnight(),
+      periodInMinutes: 1440 // 24小时
+    });
+    
+    // 监听每日重置闹钟
+    chrome.alarms.onAlarm.addListener((alarm) => {
+      if (alarm.name === 'daily-reset') {
+        this.resetDailyCounts();
+      }
+    });
+  }
+  
+  getNextMidnight() {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0); // 设置为明天凌晨
+    return midnight.getTime();
+  }
+  
+  resetDailyCounts() {
+    this.dailyAccessCount = {};
+    chrome.storage.local.set({ dailyAccessCount: {} });
+    console.log('Daily access counts reset');
   }
 
   async handleSleepAlarm() {
@@ -312,6 +460,46 @@ class BackgroundService {
   
   getWarningHistory(sendResponse) {
     sendResponse({ history: this.warningHistory });
+  }
+  
+  getDailyStatistics(sendResponse) {
+    const today = new Date().toDateString();
+    const todayStats = this.dailyAccessCount[today] || {};
+    const totalDailyAccess = Object.values(todayStats).reduce((sum, count) => sum + count, 0);
+    
+    // Get weekly statistics
+    const weeklyStats = this.getWeeklyStatistics();
+    
+    sendResponse({
+      daily: {
+        date: today,
+        accessCount: todayStats,
+        totalAccess: totalDailyAccess
+      },
+      weekly: weeklyStats,
+      frequencySettings: this.frequencySettings
+    });
+  }
+  
+  getWeeklyStatistics() {
+    const weeklyStats = {};
+    const today = new Date();
+    
+    // Get stats for the last 7 days
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dateStr = date.toDateString();
+      const dayStats = this.dailyAccessCount[dateStr] || {};
+      const totalAccess = Object.values(dayStats).reduce((sum, count) => sum + count, 0);
+      
+      weeklyStats[dateStr] = {
+        accessCount: dayStats,
+        totalAccess: totalAccess
+      };
+    }
+    
+    return weeklyStats;
   }
   
   clearWarningHistory(sendResponse) {

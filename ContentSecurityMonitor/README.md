@@ -1,6 +1,20 @@
 This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
-# Getting Started
+# Content Security Monitor
+
+An advanced content filtering application that monitors and controls web content access across devices.
+
+## Cross-Platform Integration
+
+This app now supports data synchronization with the PC browser extension:
+- Import browsing history from your PC browser extension
+- Export mobile browsing data for PC use
+- Unified statistics dashboard showing combined data
+- Merged content access patterns across devices
+
+See [CROSS_PLATFORM_INTEGRATION.md](CROSS_PLATFORM_INTEGRATION.md) for detailed integration guide.
+
+## Getting Started
 
 >**Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions till "Creating a new application" step, before proceeding.
 
@@ -54,6 +68,34 @@ Now that you have successfully run the app, let's modify it.
 2. For **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Developer Menu** (<kbd>Ctrl</kbd> + <kbd>M</kbd> (on Window and Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (on macOS)) to see your changes!
 
    For **iOS**: Hit <kbd>Cmd ⌘</kbd> + <kbd>R</kbd> in your iOS Simulator to reload the app and see your changes!
+
+## Key Features
+
+### Content Filtering
+- Real-time URL analysis and blocking
+- Keyword-based content detection
+- Customizable filtering rules
+
+### Frequency Monitoring
+- Domain access frequency tracking
+- Configurable warning and blocking thresholds
+- Real-time notifications for excessive access
+
+### Data Analytics
+- Comprehensive statistics dashboard
+- Domain access patterns and trends
+- Content type distribution analysis
+
+### Cross-Platform Sync
+- Import data from PC browser extension
+- Export mobile data for PC use
+- Unified browsing history across devices
+
+## Documentation
+
+- [FREQUENCY_MONITORING_IMPLEMENTATION.md](FREQUENCY_MONITORING_IMPLEMENTATION.md) - Frequency monitoring features
+- [PC_BROWSER_INTEGRATION.md](PC_BROWSER_INTEGRATION.md) - PC browser extension data format
+- [CROSS_PLATFORM_INTEGRATION.md](CROSS_PLATFORM_INTEGRATION.md) - Cross-platform integration guide
 
 ## Congratulations! :tada:
 
